@@ -1,10 +1,6 @@
 import random
 import time
 
-# bits for grid drawing
-gridSpace = " " * 14
-gridLine = "#" * 14
-grid=[]
 taken=[0,1,2,3,4,5,6,7,8]
 # circle pixel art
 o = []
@@ -23,44 +19,49 @@ x.append("    xxxx    ")
 x.append("  xx    xx  ")
 x.append("xx        xx")
 
-def topBottom():
-    for n in range(6):
-        for i in range(2):
-            grid.append(gridSpace)
-            grid.append("#")
-        grid.append(gridSpace + "\n")
-    return None
+def createGridRow(grid):
+    for _ in range(6):
+        grid.append(list(" " * 14 + "#" + " " * 14 + "#" + " " * 14 + "\n"))
 
-def line():
-    for i in range(3):
-        grid.append(gridLine)
-    grid.append("##" + "\n")
-    return None
+def createGridSeperator(grid):
+    grid.append("#" * 44 + "\n")
 
-def drawGrid():
-    for i in range(2):
-        topBottom()
-        line()
-    topBottom()
-    return None
+def createEmptyGrid():
+    grid = []
+    createGridRow(grid)
+    createGridSeperator(grid)
+    createGridRow(grid)
+    createGridSeperator(grid)
+    createGridRow(grid)
+    return grid
 
-# o shape for circle x shape for cross
-def circleCross(position, shape, mini):
-    if position <= 2: 
-        x = 0
-    elif position <= 5: 
-        x = 28
-    else: 
-        x = 56
-    for i in range(0, 6):
-        # Making sure newline does not get deleted
-        # Spot is the corect place to put the shapes
-        spot = ((position*2) + (i*5) + x)
-        if "\n" in grid[spot]: 
-            grid[spot] = " " + shape[i] + " \n"
-        else: 
-            grid[spot] = " " + shape[i] + " "
-    taken[position] = mini
+def populateGrid(grid):
+    for i in range(len(taken)):
+        if not isinstance(taken[i], int):
+            if i <= 2: row = 0
+            elif i <= 5: row = 7
+            else: row = 14
+
+            if i in [0,3,6]: col = 0
+            elif i in [1,4,7]: col = 15
+            else: col = 30
+
+            if taken[i] == "x":
+                for n in range(6):
+                    grid[row + n][col+1:col+13] = x[n]
+            else:
+                for n in range(6):
+                    grid[row + n][col+1:col+13] = o[n]
+
+def printGrid(grid):
+    for i in range(len(grid)):
+        print("".join(grid[i]), end="")
+    #print("".join(grid))
+
+def printTerminalGrid():
+    grid = createEmptyGrid()
+    populateGrid(grid)
+    printGrid(grid)
     return None
 
 def checkWinner():
@@ -73,26 +74,20 @@ def checkWinner():
             x = taken[start[n]:stop[n]:step[n]].count("x")
             o = taken[start[n]:stop[n]:step[n]].count("o")
             if x == 3:
-                print("x is the winner!")
-                return True
+                return "x"
             elif o == 3:
-                print("o is the winner!")
-                return True
+                return "o"
             # Exits after one check for the diagonals
             if n >= 3: break
     # Check if the grid is full, if so then its a draw
     k = [k for k in taken if isinstance(k, int)]
     if not k: 
-        print("It's a draw!")
-        return None
-    # No winner found
-    return False
+        return "draw"
+    return None
     
-def computerInput(computer):
-    if "x" in computer[0]: symbol = "x"
-    else: symbol = "o"
+def computerInput(computerShape):
     # Two of a kind? Take the third.
-    # Rows, Columns, Diagonal TL to BR, Diagonal TR to BL. In that order
+    # Rows, Columns, Diagonal Top Left to Bottom Right, Diagonal Top Right to Bottom Left. In that order
     for n in range(4):
         for i in range(3):
             start = [i*3, i, 0, 2]
@@ -101,11 +96,8 @@ def computerInput(computer):
             x = taken[start[n]:stop[n]:step[n]].count("x")
             o = taken[start[n]:stop[n]:step[n]].count("o")
             if x == 2 and o == 0 or o == 2 and x == 0:
-                # Updates grid
-                g = [k for k in taken[start[n]:stop[n]:step[n]] if isinstance(k, int)]
-                circleCross(g[0], computer, symbol)
                 # Updates taken
-                taken[start[n]:stop[n]:step[n]] = [symbol if isinstance(k, int) else k for k in taken[start[n]:stop[n]:step[n]]]
+                taken[start[n]:stop[n]:step[n]] = [computerShape if isinstance(k, int) else k for k in taken[start[n]:stop[n]:step[n]]]
                 return None
             # Exits after one check for the diagonals
             if n >= 3: break
@@ -115,10 +107,10 @@ def computerInput(computer):
     for i in range(9):
         if isinstance(taken[i], int):
             array.append(i)
-    circleCross(random.choice(array), computer, symbol)
+    taken[random.choice(array)] = computerShape
     return None
 
-def userTurn(shape, user):
+def validateUserInput():
     position = None
     while position == None:
         position = input()
@@ -126,62 +118,73 @@ def userTurn(shape, user):
         if not position.isdigit():
             position = None
             print("Must be a whole number!")
-        position = int(position)
         # Ensures int is within grid
-        if position > 9 or position < 1:
+        elif 1 > int(position) > 9:
             position = None
             print("Must be 1 to 9!")
         # Ensures position is not taken
-        elif not isinstance(taken[position-1], int):
+        elif not isinstance(taken[int(position)-1], int):
             position = None
             print("Must be an empty space!")
+        else:
+            return position
+        
+def userTurn(userShape):
+    position = validateUserInput()
     # Updates grid with choice
-    circleCross(position-1, shape, user)
-    # Prints new grid
-    print("".join(grid))
+    taken[int(position)-1] = userShape
     # Ends the program if there is a winner or a draw
-    n = checkWinner()
-    if n == True: return True
-    elif n == None: return None
-    else: return False
+    return checkWinner()
 
-def computerTurn(computer):
+
+def computerTurn(computerShape):
     # Plays the computers turn
-    computerInput(computer)
+    computerInput(computerShape)
     # Waits for a bit
     time.sleep(2)
-    # Prints new grid
-    print("".join(grid))
     # Ends the program if there is a winner or a draw
-    n = checkWinner()
-    if n == True: return True
-    elif n == None: return None
-    else: return False
+    return checkWinner()
 
-drawGrid()
+def announceWinner(winner):
+    if winner == "draw":
+        print("Its a draw!")
+        return True
+    elif winner == "x" or winner == "o":
+        print(winner, "is the winner!")
+        return True
+    return False
+
+def printInstructions():
+    print("Please type a number to make a choice it looks like this:\n 1 | 2 | 3\n-----------\n 4 | 5 | 6\n-----------\n 7 | 8 | 9")
+
 print("Welcome to Tic-Tac-Toe!\nx Goes first.")
-user = None
-while not user == "x" and not user == "o":
+userShape = None
+while not userShape == "x" and not userShape == "o":
     print("Are you x or o?")
-    user = input()
-    if user == "o": 
-        shape, computer = o, x
+    userShape = input()
+    if userShape == "o": 
+        computerShape = "x"
     else: 
-        shape, computer = x, o
-
-print("".join(grid))
-print("Line up 3 of your shape in any direction to win!\nPlease type a number to make a choice it looks like this:\n1 2 3\n4 5 6\n7 8 9")
+        computerShape = "o"
 
 while True:
-    if user == "x":
-        n = userTurn(shape, user)
-        if n == True or n == None: break
-        n = computerTurn(computer)
-        if n == True or n == None: break
+    if userShape == "x":
+        printInstructions()
+        n = userTurn(userShape)
+        printTerminalGrid()
+        if announceWinner(n): break
+
+        n = computerTurn(computerShape)
+        printTerminalGrid()
+        if announceWinner(n): break
     else:
-        n = computerTurn(computer)
-        if n == True or n == None: break
-        n = userTurn(shape, user)
-        if n == True or n == None: break
+        n = computerTurn(computerShape)
+        printTerminalGrid()
+        if announceWinner(n): break
+
+        printInstructions()
+        n = userTurn(userShape)
+        printTerminalGrid()
+        if announceWinner(n): break
 
 print("Thanks for playing!")
