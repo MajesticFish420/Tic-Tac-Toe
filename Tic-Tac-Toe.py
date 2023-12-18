@@ -2,7 +2,7 @@ import random
 import time
 
 taken=[0,1,2,3,4,5,6,7,8]
-# circle pixel art
+
 o = []
 o.append("   oooooo   ")
 o.append(" ooo    ooo ")
@@ -10,7 +10,7 @@ o.append("oo        oo")
 o.append("oo        oo")
 o.append(" ooo    ooo ")
 o.append("   oooooo   ")
-# cross pixel art
+
 x = []
 x.append("xx        xx")
 x.append("  xx    xx  ")
@@ -56,13 +56,12 @@ def populateGrid(grid):
 def printGrid(grid):
     for i in range(len(grid)):
         print("".join(grid[i]), end="")
-    #print("".join(grid))
+    print("")
 
 def printTerminalGrid():
     grid = createEmptyGrid()
     populateGrid(grid)
     printGrid(grid)
-    return None
 
 def checkWinner():
     # Rows, Columns, Diagonal TL to BR, Diagonal TR to BL. In that order
@@ -83,7 +82,6 @@ def checkWinner():
     k = [k for k in taken if isinstance(k, int)]
     if not k: 
         return "draw"
-    return None
     
 def computerInput(computerShape):
     # Two of a kind? Take the third.
@@ -108,7 +106,6 @@ def computerInput(computerShape):
         if isinstance(taken[i], int):
             array.append(i)
     taken[random.choice(array)] = computerShape
-    return None
 
 def validateUserInput():
     position = None
@@ -130,20 +127,16 @@ def validateUserInput():
             return position
         
 def userTurn(userShape):
+    printInstructions()
     position = validateUserInput()
     # Updates grid with choice
     taken[int(position)-1] = userShape
-    # Ends the program if there is a winner or a draw
-    return checkWinner()
-
 
 def computerTurn(computerShape):
     # Plays the computers turn
     computerInput(computerShape)
     # Waits for a bit
     time.sleep(2)
-    # Ends the program if there is a winner or a draw
-    return checkWinner()
 
 def announceWinner(winner):
     if winner == "draw":
@@ -152,10 +145,14 @@ def announceWinner(winner):
     elif winner == "x" or winner == "o":
         print(winner, "is the winner!")
         return True
-    return False
 
 def printInstructions():
-    print("Please type a number to make a choice it looks like this:\n 1 | 2 | 3\n-----------\n 4 | 5 | 6\n-----------\n 7 | 8 | 9")
+    print("Please type a number to make a choice it looks like this:")
+    print(" 1 | 2 | 3")
+    print("-----------")
+    print(" 4 | 5 | 6")
+    print("-----------")
+    print(" 7 | 8 | 9")
 
 print("Welcome to Tic-Tac-Toe!\nx Goes first.")
 userShape = None
@@ -164,27 +161,23 @@ while not userShape == "x" and not userShape == "o":
     userShape = input()
     if userShape == "o": 
         computerShape = "x"
+        userGoesNext = False
     else: 
         computerShape = "o"
+        userGoesNext = True
 
 while True:
-    if userShape == "x":
-        printInstructions()
-        n = userTurn(userShape)
-        printTerminalGrid()
-        if announceWinner(n): break
-
-        n = computerTurn(computerShape)
-        printTerminalGrid()
-        if announceWinner(n): break
+    if userGoesNext:
+        userTurn(userShape)
+        userGoesNext = False
     else:
-        n = computerTurn(computerShape)
-        printTerminalGrid()
-        if announceWinner(n): break
+        computerTurn(computerShape)
+        userGoesNext = True
 
-        printInstructions()
-        n = userTurn(userShape)
-        printTerminalGrid()
-        if announceWinner(n): break
+    printTerminalGrid()
+    turnResult = checkWinner()
+    if turnResult:
+        announceWinner(turnResult)
+        break
 
 print("Thanks for playing!")
